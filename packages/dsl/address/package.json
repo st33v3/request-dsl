@@ -1,0 +1,5 @@
+{
+    "sideEffects": false,
+    "module": "./index.js",
+    "main": "../dist/address.js"
+}
