@@ -68,7 +68,7 @@ function makeBuilder(material: StrategyMaterial): StrategyBuilder {
         exponentialDelay: (base = 2) => assert("retry") && makeBuilder({...material, base }),
         fibonacciDelay: (fib = 0) =>  assert("retry") && makeBuilder({...material, fib }),
         error: (error: unknown) => makeBuilder({...empty, strategy: "error", error}),
-        aux: (aux: unknown) => assert("fail") && makeBuilder({...material, aux}),
+        aux: (aux: unknown) => assert("error") && makeBuilder({...material, aux}),
         useDefault: () => makeBuilder({...empty, strategy: "default"}),
     });
 }

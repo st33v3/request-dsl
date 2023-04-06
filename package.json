@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "execute": "execute",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest -r packages/test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "4.6.4"
+    "typescript": "5.0.3",
+    "vitest": "^0.29.8"
   }
 }

@@ -1,16 +1,18 @@
 {
-    "compilerOptions": {
-      "target": "ESNext",
-      "allowJs": false,
-      "skipLibCheck": false,
-      "allowSyntheticDefaultImports": true,
-      "strict": true,
-      "forceConsistentCasingInFileNames": true,
-      "module": "CommonJS",
-      "moduleResolution": "Node",
-      "resolveJsonModule": true,
-      "outDir": "./dist",
-    },
-    "include": ["src"],
-  }
-  
+  "compilerOptions": {
+    "target": "ESNext",
+    "allowJs": false,
+    "skipLibCheck": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+  },
+  "include": ["src"],
+}

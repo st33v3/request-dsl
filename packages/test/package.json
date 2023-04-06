@@ -1,0 +1,12 @@
+{
+    "private": true,
+    "scripts": {
+      "test": "vitest",
+      "types": "vitest typecheck --run",
+      "tsc": "tsc --noEmit"
+    },
+    "dependencies": {
+      "request-dsl": "workspace:*",
+      "request-dsl-fetch": "workspace:*"
+    }
+  }

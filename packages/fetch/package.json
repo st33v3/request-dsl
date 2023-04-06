@@ -1,18 +1,22 @@
 {
-    "name": "request-dsl-fetch",
-    "version": "0.1.0",
-    "description": "",
-    "main": "index.js",
-    "scripts": {
-      "tsc": "tsc",
-      "test": "tsc && node dist/index.js"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "request-dsl": "workspace:*"
-    }
-    
+  "name": "request-dsl-fetch",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist",
+  "types": "dist",
+  "scripts": {
+    "tsc": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "request-dsl": "workspace:*"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.3.1"
+  },
+  "directories": {
+    "lib": "dist"
   }
-  
+}

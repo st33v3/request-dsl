@@ -4,4 +4,6 @@
 /packages/dsl/node_modules/
 /packages/fetch/dist/
 /packages/fetch/node_modules/
+/packages/test/dist/
+/packages/test/node_modules/
 
