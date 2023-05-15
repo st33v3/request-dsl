@@ -46,9 +46,9 @@ export namespace BodyCodec {
         };
     }
 
-    function wrap<I,O>(f: (i: CodecData<I>) => undefined | CodecData<O>): BodyCodec<I, O> {
-        const self: BodyCodec<I, O> = f as BodyCodec<I, O>;
-        return Object.assign(f, {
+    export function wrap<I,O>(self: (i: CodecData<I>) => undefined | CodecData<O>): BodyCodec<I, O> {
+        //Bind clones the function to create new object, so properties can be set
+        return Object.assign(self.bind({}), {
             map<O1>(f: (o:O) => PromiseLike<O1>): BodyCodec<I, O1> {
                 return wrap(i => mapData(self(i), f));
             },
@@ -95,7 +95,13 @@ export namespace BodyCodec {
         }));
     }
 
-    export function voidDecoder(): BodyCodec<DefaultBody, never> {
+    export type SelectCodecType<CS extends Array<unknown>, O = never, I = unknown> = CS extends [[string, BodyCodec<infer CI, infer CO>], ...infer CSS] ? SelectCodecType<CSS, O | CO, I & CI> : BodyCodec<I, O>;
+
+    export function select<CS extends Array<[string, BodyCodec<any, any>]>>(selector: (headers: Record<string, string>) => string, ...variants: CS): SelectCodecType<CS> {
+        throw new Error();
+    }
+
+    export function voidDecoder(): BodyCodec<any, never> {
         return wrap(() => undefined);
     }
 
@@ -178,3 +184,5 @@ export namespace BodyCodec {
         return iterable(encoder.encode(s));
     }
 }
+
+const g = BodyCodec.select(rec => rec["a"], ["s", BodyCodec.toString()], ["n", BodyCodec.toString().map(s => parseInt(s))]);

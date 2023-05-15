@@ -5,9 +5,21 @@ import Address from "request-dsl/address";
 import Accept from "request-dsl/accept";
 import http from "node:http";
 import { fetchProcessor } from "request-dsl-fetch";
+import fetch, {Headers as FHeaders, Request, Response} from "node-fetch";
 
 beforeAll(() => {
 
+  // Asserts that fetch API is available.
+
+  if (!globalThis.fetch) {
+    globalThis.fetch = fetch as any;
+    globalThis.Headers = FHeaders as any;
+    globalThis.Request = Request as any;
+    globalThis.Response = Response as any;
+  }
+
+  //Start devel server
+  
   const hostname = "127.0.0.1";
   const port = 3000;
 
@@ -52,7 +64,7 @@ test('Create request factor', () => {
   const r7 = r6.apply(Accept.acceptJson(200, json => "" + json));
   console.dir(r7({y: "text/html"}, new Map()));
   console.log(RequestAddress.toUrl(r7({y: "text/html"}, new Map()).address));
-  const api = proc.build(r7);
+  const api = proc(r7);
   
 })
 

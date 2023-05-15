@@ -14,7 +14,7 @@ export interface ErrorStrategy {
 export interface RetryStrategy {
     kind: 'retry',
     delay: (attempt: number) => number, //Delay in millis
-    transform?: <B, R>(addr: RequestData<B, R>) => RequestData<B, R>,
+    transform?: <R>(addr: RequestData<R>) => RequestData<R>,
 }
 
 export interface UseDefaultStrategy {

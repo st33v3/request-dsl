@@ -5,6 +5,7 @@ export type SimpleRequestTransform<P, B, R> = RequestTransform<P, B, R, P, B, R>
 
 export type SimpleRequestTransform2 = <P, B, R>(factory: RequestFactory<P, B, R>) => RequestFactory<P, B, R>;
 export type AltResultTransform<T> = <P, B, R>(factory: RequestFactory<P, B, R>) => RequestFactory<P, B, R | T>;
+export type MapResultTransform<R, T> = <P, B>(factory: RequestFactory<P, B, R>) => RequestFactory<P, B, T>;
 
 export namespace RequestTransform {
     export function pipe<P1, B1, R1, P2, B2, R2>(t1: RequestTransform<P1, B1, R1, P2, B2, R2>): RequestTransform<P1, B1, R1, P2, B2, R2>;

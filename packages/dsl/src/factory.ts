@@ -1,55 +1,33 @@
-import { BodyCodec, DefaultBody } from "./codec";
+import { BodyCodec, CodecData, DefaultBody } from "./codec";
 import { RequestTransform } from "./transform";
 import { RecoverStrategy, RequestFailed } from "./failure";
+import { HttpMethod } from "./method-enum";
+import { RequestProcessor } from "./process";
+import { RequestAddress } from "./urlAddress";
 
-export interface RequestAddress {
-    protocol: string;
-    hostname: string;
-    port?: number;
-    username: string;
-    password: string;
-    path: string[];
-    search: URLSearchParams;
-}
 
-export namespace RequestAddress {
-    
-    export function fromUrl(s: URL): RequestAddress {
-        const ret: RequestAddress = {
-            path: s.pathname.substring(1).split("/"),
-            hostname: s.hostname,
-            protocol: s.protocol.substring(1),
-            search: s.search ? new URLSearchParams(s.search.substring(1)) : new URLSearchParams(),
-            username: s.username,
-            password: s.password,
-        };
-        if (s.port) ret.port = parseInt(s.port);
-        return ret;
-    }
-
-    export function toUrl(addr: RequestAddress): URL {
-        if (!addr.hostname) throw new Error("Address hostname is missing");
-        const up = addr.username ? addr.username + (addr.password ? ":" + addr.password : "") + "@" : "";
-        const q = addr.search ? "?" + addr.search : "";
-        const p = addr.port ? ":" + addr.port : "";
-        const pn = addr.path.length ? "/" + addr.path.join("/") : "";
-        return new URL(`${addr.protocol ?? "https"}://${up}${addr.hostname}${p}${pn}${q}`);
-    }
-
-}
-
-export interface RequestData<B, R> {
+export interface RequestData<R> {
     headers: Record<string, string>;
-    encoder?: BodyCodec<B, DefaultBody>;
+    body: CodecData<DefaultBody> | undefined;
     address: RequestAddress;
     decoder: BodyCodec<DefaultBody, R>;
     recover: BodyCodec<DefaultBody, RecoverStrategy>; //should return data for repeated request
+    method: HttpMethod;
 }
 
+/**
+ * Context for transforming arguments to RequestData. It is provided by processor when request 
+ * is being made
+ */
+export interface RequestContext<P, B> {
+    args: P;
+    body: () => Promise<B>;
+    executor: <R>(data: RequestData<R>) => Promise<R>; //request execution - may be used during combination of requst factories
+}
 export interface RequestFactory<A, B, R> {
-    (args: A, ctx: Map<any, unknown>): RequestData<B, R>;
+    (ctx: RequestContext<A, B>): RequestData<R>;
     /**
-     * Tool to provide fluent API. Having transformers a and b, these call are equivalent factory.apply(a).apply(b) and b(a(factory))
+     * Tool to provide fluent API. Having transformers a and b, these call are equivalent: factory.apply(a).apply(b) and b(a(factory))
      */
     apply<A1, B1, R1>(t: RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1>;
     addArgs<A1>(): RequestFactory<A & A1 , B, R>;
@@ -59,41 +37,49 @@ export interface RequestFactory<A, B, R> {
      * @param f funtion that provides factory transformer for particular arguments
      */
     applyArgs<A1 extends A, B1, R1>(f: (p: A) => RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1>;
-    pipeTo<B1, R1>(f: (d: RequestData<B, R>, ctx: Map<any, unknown>) => RequestData<B1, R1>): RequestFactory<A, B1, R1>
+    pipeTo<R1>(f: (d: RequestData<R>, ctx: RequestContext<A, B>) => RequestData<R1>): RequestFactory<A, B, R1>;
 }
 
 export namespace RequestFactory {
-    export function init(): RequestFactory<unknown, never, never> {
+    export function init(): RequestFactory<{}, unknown, never> {
         return wrap(() => ({ 
             headers: {},
             address: {protocol: "https", path: [], search: new URLSearchParams(), username: "", password: "",  hostname: ""},
             decoder: BodyCodec.voidDecoder(),
             recover: BodyCodec.voidDecoder(),
+            method: HttpMethod.Get,
+            body: undefined,
          }));
     }
 
-    function wrap<A, B, R>(f: (args: A, ctx: Map<any, unknown>) => RequestData<B, R>): RequestFactory<A, B, R> {
-        const self = f as RequestFactory<A, B, R>;
-        return Object.assign(f, {
+    export function wrap<A, B, R>(self: (ctx: RequestContext<A, B>) => RequestData<R>): RequestFactory<A, B, R> {
+        const ret = self.bind({}); //Clone the function so later assign will not change the instance
+        return Object.assign(ret, {
             apply<A1, B1, R1>(t: RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1> {
-                return t(self);
+                return t(ret as RequestFactory<A, B, R>);
             },
             addArgs<A1>(): RequestFactory<A & A1 , B, R> {
                 return self as unknown as RequestFactory<A & A1 , B, R>;
             },
             provideArgs<A1 extends Partial<A>>(provided: A1): RequestFactory<Omit<A, keyof A1> , B, R> {
-                return wrap<Omit<A, keyof A1>, B, R>((args, ctx) => f({...args, ...provided} as unknown as A, ctx))
+                return wrap<Omit<A, keyof A1>, B, R>((ctx) => self({...ctx, args: {...ctx.args, ...provided} as unknown as A}))
             },
-
             applyArgs<A1 extends A, B1, R1>(f: (p: A) => RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1> {
-                return wrap((args, ctx) => {
-                    const t = f(args);
-                    return t(self)(args, ctx);
+                return wrap((ctx) => {
+                    const t = f(ctx.args);
+                    return t(ret as RequestFactory<A, B, R>)(ctx);
                 });
             },
-            pipeTo<B1, R1>(f1: (d: RequestData<B, R>, ctx: Map<any, unknown>) => RequestData<B1, R1>): RequestFactory<A, B1, R1> {
-                return wrap((args, ctx) => f1(self(args, ctx), ctx));
+            pipeTo<R1>(f1: (d: RequestData<R>, ctx: RequestContext<A, B>) => RequestData<R1>): RequestFactory<A, B, R1> {
+                return wrap((ctx) => f1(self(ctx), ctx));
             },
         });
     }
 }
+
+type A = {a: string};
+type B = A & void;
+type C = A & unknown;
+type D = void extends unknown ? true : false;
+type E = [string | undefined] extends [undefined] ? true : false;
+
