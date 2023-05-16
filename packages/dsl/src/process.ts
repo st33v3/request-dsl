@@ -6,15 +6,22 @@ import type { SimpleRequestTransform2 } from "./transform";
 
 export type RunArgs<A, B> = [keyof A] extends [never]
     ? ([unknown] extends [B]
-        ? [signal?: AbortSignal]
-        : [body: () => B | PromiseLike<B>, signal?: AbortSignal])
+        ? []
+        : [body: () => B | PromiseLike<B>])
     : ([unknown] extends [B] 
-        ? [args: A, signal?: AbortSignal]
-        : [args: A, body: () => B | PromiseLike<B>, signal?: AbortSignal]);
+        ? [args: A]
+        : [args: A, body: () => B | PromiseLike<B>]);
+
+export type CombineBodies<B1, B2> = [B1] extends [undefined] ? B2 : B1;
 
 export interface ApiRequest<A, B, R> {
     (...args: RunArgs<A, B>): Promise<R>;
     withAbort(abort: AbortSignal, ...args: RunArgs<A, B>): Promise<R>;
+    map<T>(f: (r: R) => T | Promise<T>): ApiRequest<A, B, T>;
+    contramap<T>(f: (r: B) => T | Promise<T>): ApiRequest<A, B, T>;
+    apply(args: A): ApiRequest<{}, B, R>;
+    flatMap<A1, B1 extends ((B extends undefined ? any : B) | undefined), T>(f: (r: R) => ApiRequest<A1, B1, T>): ApiRequest<A & A1, CombineBodies<B, B1>, T>;
+    zip<A1, B1 extends ((B extends undefined ? any : B) | undefined), T>(req: ApiRequest<A1, B1, T>): ApiRequest<A & A1, CombineBodies<B, B1>, [R, T]>;
 }
 
 export interface RequestProcessor {

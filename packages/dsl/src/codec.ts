@@ -2,15 +2,14 @@ export type DefaultBody = AsyncIterable<Uint8Array>;
 
 /**
  * Representation of input and output of BodyCodec. Core field is `value`, which contains
- * value being transformed by BodyCodec. Other field carry additional information about
- * conversion being made and allow shortcutting most common transformations such as to/from JSON
+ * value being transformed by BodyCodec. Other fields allow shortcutting most common transformations such as to/from JSON
  * or string.
+ * CodecData represent future transformation - nothing is transformed or retrieved until value() or
+ * similar method is called.
+ * CodeData is referentially transparent and may be safely created and droped
  */
 export interface CodecData<T> {
-    status: number;
     value(): Promise<T>;
-    headers: Record<string, string>;
-    aux: unknown;
     inString?(): Promise<string>;
     inJson?(): Promise<unknown>;
     outString?(): Promise<string>;
@@ -25,84 +24,60 @@ export interface CodecData<T> {
  */
 export interface BodyCodec<I, O> {
     /**
-     * Transforms CodecData of I to CodecDdata of O or signals that transformation is not possible.
+     * Transforms CodecData of I to CodecDdata of O 
      */
-    (input: CodecData<I>): undefined | CodecData<O>;
+    (input: CodecData<I>): CodecData<O>;
     map<O1>(f: (o:O) => O1 | PromiseLike<O1>): BodyCodec<I, O1>;
     contramap<I1>(f: (i:I1) => I | PromiseLike<I>): BodyCodec<I1, O>;
+    flatMap<O1>(f: (o: O) => BodyCodec<O, O1>): BodyCodec<I, O1>;
     via<O1>(codec: BodyCodec<O, O1>): BodyCodec<I, O1>;
-    when(t: (status: number, headers: Record<string, string>, aux: unknown) => boolean): BodyCodec<I, O>;
-    otherwise<O1>(other: BodyCodec<I, O1>): BodyCodec<I, O | O1>;
 }
 export namespace BodyCodec {
 
-    function mapData<A, B>(d: CodecData<A> | undefined, map: (a:A) => B | PromiseLike<B>): CodecData<B> | undefined {
-        if (!d) return undefined;
-        return {
-            status: d.status,
-            headers: d.headers,
-            aux: d.aux,
-            value:() => d.value().then(map),
-        };
-    }
-
-    export function wrap<I,O>(self: (i: CodecData<I>) => undefined | CodecData<O>): BodyCodec<I, O> {
-        //Bind clones the function to create new object, so properties can be set
+    export function wrap<I,O>(self: (i: CodecData<I>) => CodecData<O>): BodyCodec<I, O> {
+        //Bind clones the function, so properties can be set and not overwritten
         return Object.assign(self.bind({}), {
-            map<O1>(f: (o:O) => PromiseLike<O1>): BodyCodec<I, O1> {
-                return wrap(i => mapData(self(i), f));
+            map<O1>(f: (o:O) => O1 | PromiseLike<O1>): BodyCodec<I, O1> {
+                return wrap(data => ({value: () => self(data).value().then(f)}));
             },
-            contramap<I1>(f: (i:I1) => PromiseLike<I>): BodyCodec<I1, O> {
-                return wrap<I1, O>(i => {
-                    const i2 = mapData(i, f)
-                    return i2 ? self(i2) : undefined;
-                });
+            flatMap<O1>(f: (o:O) => BodyCodec<O, O1>): BodyCodec<I, O1> {
+                return wrap<I, O1>(data => ({
+                    value: () => self(data).value().then(v => {
+                        const codec = f(v);
+                        return codec({value: () => Promise.resolve(v)}).value();
+                    })
+                }));
+            },
+            contramap<I1>(f: (i:I1) => I | PromiseLike<I>): BodyCodec<I1, O> {
+                return wrap<I1, O>(data => self({value: () => data.value().then(f)}));
             },
             via<O1>(codec: BodyCodec<O, O1>): BodyCodec<I, O1> {
-                return wrap(i => {
-                    const o = self(i);
-                    return o ? codec(o) : undefined;
-                });
+                return wrap(data => codec(self(data)));
             },
-            when(t: (status: number, headers: Record<string, string>, aux: unknown) => boolean) {
-                return wrap<I, O>(i => t(i.status, i.headers, i.aux) ? self(i) : undefined);
-            },
-            otherwise<O1>(other: BodyCodec<I, O1>) {
-                return wrap<I, O | O1>(i => {
-                    const ret = self(i);
-                    return ret ? ret : other(i);
-                });
-            }
         });
     }
     
-    export function defaultDecoder(): BodyCodec<DefaultBody, DefaultBody> {
+    export function fromFunction<I, O>(f: (i: I) => O | PromiseLike<O>): BodyCodec<I, O> {
+        return wrap<I, O>(data => ({value: () => data.value().then(f)}));
+    }
+    export function defaultCodec(): BodyCodec<DefaultBody, DefaultBody> {
         return wrap((i) => i);
     }
 
     export function drainCodec(): BodyCodec<DefaultBody, undefined> {
-        async function drain(str: (() => Promise<string>) | undefined, iter: () => Promise<DefaultBody>): Promise<undefined> {
-            if (str) await str();
-            else for await (const buf of await iter()) { /**/ } 
+        async function drain(data: CodecData<DefaultBody>): Promise<undefined> {
+            if (data.inString) await data.inString();
+            else for await (const buf of await data.value()) { /**/ } 
             return undefined;
         }
 
-        return wrap((i) => ({
-            value: () => drain(i.inString, i.value),
-            headers: i.headers,
-            status: i.status,
-            aux: i.aux,
-        }));
+        return wrap(data => ({value: () => drain(data)}));
     }
 
     export type SelectCodecType<CS extends Array<unknown>, O = never, I = unknown> = CS extends [[string, BodyCodec<infer CI, infer CO>], ...infer CSS] ? SelectCodecType<CSS, O | CO, I & CI> : BodyCodec<I, O>;
 
     export function select<CS extends Array<[string, BodyCodec<any, any>]>>(selector: (headers: Record<string, string>) => string, ...variants: CS): SelectCodecType<CS> {
         throw new Error();
-    }
-
-    export function voidDecoder(): BodyCodec<any, never> {
-        return wrap(() => undefined);
     }
 
     export function toString(encoding?: string): BodyCodec<DefaultBody, string> {
@@ -113,9 +88,6 @@ export namespace BodyCodec {
             return {
                 value: str,
                 inString: str,
-                headers: i.headers,
-                status: i.status,
-                aux: i.aux,
             };
         });
     }
@@ -128,9 +100,6 @@ export namespace BodyCodec {
             return {
                 value: json,
                 inJson: json,
-                headers: i.headers,
-                status: i.status,
-                aux: i.aux,
             };
         });
     }
@@ -140,9 +109,6 @@ export namespace BodyCodec {
             return {
                 value: () => makeBuffer(i.value()),
                 outString: i.value,
-                headers: i.headers,
-                status: i.status,
-                aux: i.aux,
             };
         });
     }
@@ -152,9 +118,6 @@ export namespace BodyCodec {
             return {
                 value: () => makeBuffer(i.value().then(v => JSON.stringify(v))),
                 outJson: i.value,
-                headers: i.headers,
-                status: i.status,
-                aux: i.aux,
             };
         });
     }

@@ -1,17 +1,17 @@
-import { BodyCodec, CodecData, DefaultBody } from "./codec";
+import { CodecData, DefaultBody } from "./codec";
 import { RequestTransform } from "./transform";
 import { RecoverStrategy, RequestFailed } from "./failure";
 import { HttpMethod } from "./method-enum";
-import { RequestProcessor } from "./process";
 import { RequestAddress } from "./urlAddress";
+import { ResponseDecoder } from "./decoder";
 
 
 export interface RequestData<R> {
     headers: Record<string, string>;
     body: CodecData<DefaultBody> | undefined;
     address: RequestAddress;
-    decoder: BodyCodec<DefaultBody, R>;
-    recover: BodyCodec<DefaultBody, RecoverStrategy>; //should return data for repeated request
+    decoder: ResponseDecoder<R>;
+    recover: ResponseDecoder<RecoverStrategy>; //should return data for repeated request
     method: HttpMethod;
 }
 
@@ -45,8 +45,8 @@ export namespace RequestFactory {
         return wrap(() => ({ 
             headers: {},
             address: {protocol: "https", path: [], search: new URLSearchParams(), username: "", password: "",  hostname: ""},
-            decoder: BodyCodec.voidDecoder(),
-            recover: BodyCodec.voidDecoder(),
+            decoder: ResponseDecoder.voidDecoder(),
+            recover: ResponseDecoder.voidDecoder(),
             method: HttpMethod.Get,
             body: undefined,
          }));
