@@ -19,18 +19,18 @@ export interface RequestData<R> {
  * Context for transforming arguments to RequestData. It is provided by processor when request 
  * is being made
  */
-export interface RequestContext<P, B> {
-    args: P;
+export interface RequestContext<A extends {}, B> {
+    args: A;
     body: () => Promise<B>;
     executor: <R>(data: RequestData<R>) => Promise<R>; //request execution - may be used during combination of requst factories
 }
-export interface RequestFactory<A, B, R> {
+export interface RequestFactory<A extends {}, B, R> {
     (ctx: RequestContext<A, B>): RequestData<R>;
     /**
      * Tool to provide fluent API. Having transformers a and b, these call are equivalent: factory.apply(a).apply(b) and b(a(factory))
      */
-    apply<A1, B1, R1>(t: RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1>;
-    addArgs<A1>(): RequestFactory<A & A1 , B, R>;
+    apply<A1 extends {}, B1, R1>(t: RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1>;
+    addArgs<A1 extends {}>(): RequestFactory<A & A1 , B, R>;
     provideArgs<A1 extends Partial<A>>(provided: A1): RequestFactory<Omit<A, keyof A1> , B, R>;
     /**
      * Applies transformer created later from actual argument values
@@ -41,7 +41,7 @@ export interface RequestFactory<A, B, R> {
 }
 
 export namespace RequestFactory {
-    export function init(): RequestFactory<{}, unknown, never> {
+    export function init(): RequestFactory<{}, never, never> {
         return wrap(() => ({ 
             headers: {},
             address: {protocol: "https", path: [], search: new URLSearchParams(), username: "", password: "",  hostname: ""},
@@ -52,10 +52,10 @@ export namespace RequestFactory {
          }));
     }
 
-    export function wrap<A, B, R>(self: (ctx: RequestContext<A, B>) => RequestData<R>): RequestFactory<A, B, R> {
+    export function wrap<A extends {}, B, R>(self: (ctx: RequestContext<A, B>) => RequestData<R>): RequestFactory<A, B, R> {
         const ret = self.bind({}); //Clone the function so later assign will not change the instance
         return Object.assign(ret, {
-            apply<A1, B1, R1>(t: RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1> {
+            apply<A1 extends {}, B1, R1>(t: RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1> {
                 return t(ret as RequestFactory<A, B, R>);
             },
             addArgs<A1>(): RequestFactory<A & A1 , B, R> {

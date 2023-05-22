@@ -8,7 +8,7 @@ namespace Accept {
     /**
      * Throws away previous body decoders. 
      */
-    export function reset<P, B>(): RequestTransform<P, B, any, P, B, never> {
+    export function reset<A extends {}, B>(): RequestTransform<A, B, any, A, B, never> {
         return factory => factory.pipeTo<never>(data => ({...data, decoder: ResponseDecoder.voidDecoder()}));
     }
 
@@ -36,13 +36,19 @@ namespace Accept {
         return (c, h) => (stat ? stat(c) : true) && testContentType(h["content-type"], types);
     }
 
-    export function acceptJsonLax<P, B, R, T = unknown>(status: StatusCodes, convert?: (json: unknown) => T): RequestTransform<P, B, R, P, B, R | T> {
+    /**
+     * Accepts body of any content type and handle the body as JSON object.
+     * @param status HTTP Status
+     * @param convert optional covertor/validator to application specific object
+     * @returns Object parsed from HTTP body
+     */
+    export function acceptJsonLax<T = unknown>(status: StatusCodes, convert?: (json: unknown) => T): AltResultTransform<T> {
         const bd = BodyCodec.toJson();
         const bd2 = convert ? bd.map(convert) : bd as BodyCodec<DefaultBody, T>;
         return accept(bd2, testStatuses(status));
     }
 
-    export function acceptJson<P, B, R, T = unknown>(status: StatusCodes, convert?: (json: unknown) => T): RequestTransform<P, B, R, P, B, R | T> {
+    export function acceptJson<T = unknown>(status: StatusCodes, convert?: (json: unknown) => T): AltResultTransform<T> {
         const bd = BodyCodec.toJson();
         const bd2 = convert ? bd.map(convert) : bd as BodyCodec<DefaultBody, T>;
         return accept(bd2, testContentTypes(["application/json"],testStatuses(status)));
