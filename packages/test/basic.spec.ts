@@ -1,11 +1,11 @@
-import { assert, beforeAll, expect, test } from 'vitest'
-import {RequestFactory, RequestTransform, RequestAddress} from "request-dsl";
-import Headers, { contentType } from "request-dsl/headers";
-import Address from "request-dsl/address";
-import Accept from "request-dsl/accept";
+import fetch, { Headers as FHeaders, Request, Response } from "node-fetch";
 import http from "node:http";
+import { RequestAddress, RequestFactory, RequestTransform } from "request-dsl";
 import { fetchProcessor } from "request-dsl-fetch";
-import fetch, {Headers as FHeaders, Request, Response} from "node-fetch";
+import Accept from "request-dsl/accept";
+import Address from "request-dsl/address";
+import Headers, { contentType } from "request-dsl/headers";
+import { beforeAll, test } from 'vitest';
 
 beforeAll(() => {
 
@@ -62,8 +62,8 @@ test('Create request factor', () => {
   const r5 = r4.addArgs<{y: string}>().applyArgs(p => contentType(p.y, "utf-8"));
   const r6 = r5.provideArgs({x: "text/plain"});
   const r7 = r6.apply(Accept.acceptJson(200, json => "" + json));
-  console.dir(r7({y: "text/html"}, new Map()));
-  console.log(RequestAddress.toUrl(r7({y: "text/html"}, new Map()).address));
+  console.dir(r7({args: {y: "text/html"}, body: () => Promise.reject() }));
+  console.log(RequestAddress.toUrl(r7({args: {y: "text/html"}, body: () => Promise.reject() }).address));
   const api = proc(r7);
   
 })

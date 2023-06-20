@@ -146,6 +146,13 @@ export namespace BodyCodec {
         const s = await str;
         return iterable(encoder.encode(s));
     }
+
+    export function emptyBody(): CodecData<DefaultBody> {
+        return {
+            value() {return Promise.resolve(iterable()) },
+            outString() {return Promise.resolve("") },
+        }
+    }
 }
 
 const g = BodyCodec.select(rec => rec["a"], ["s", BodyCodec.toString()], ["n", BodyCodec.toString().map(s => parseInt(s))]);

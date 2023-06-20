@@ -22,7 +22,6 @@ export interface RequestData<R> {
 export interface RequestContext<A extends {}, B> {
     args: A;
     body: () => Promise<B>;
-    executor: <R>(data: RequestData<R>) => Promise<R>; //request execution - may be used during combination of requst factories
 }
 export interface RequestFactory<A extends {}, B, R> {
     (ctx: RequestContext<A, B>): RequestData<R>;
