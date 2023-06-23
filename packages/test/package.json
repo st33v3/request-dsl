@@ -1,13 +1,14 @@
 {
     "private": true,
     "scripts": {
-      "test": "vitest",
       "types": "vitest typecheck --run",
-      "tsc": "tsc --noEmit"
+      "tsc": "tsc --noEmit",
+      "test": "vitest"
     },
     "dependencies": {
       "request-dsl": "workspace:*",
       "request-dsl-fetch": "workspace:*",
       "node-fetch": "^3.3.1"    
+
     }
   }

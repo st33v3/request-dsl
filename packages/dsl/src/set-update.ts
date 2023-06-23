@@ -1,5 +1,5 @@
 //Should not be used on functions (https://github.com/microsoft/TypeScript/issues/37663)
-export type SetOrUpdate<T> = T extends Function ? never : T | ((value: T | undefined) => T);
+export type SetOrUpdate<T> = [T] extends [Function] ? never : T | ((value: T | undefined) => T);
 
 export namespace SetOrUpdate {
     function tofun<T>(set: SetOrUpdate<T>): (value: T | undefined) => T {

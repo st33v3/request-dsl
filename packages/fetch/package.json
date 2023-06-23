@@ -5,7 +5,8 @@
   "main": "dist",
   "types": "dist",
   "scripts": {
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -15,5 +16,10 @@
   },
   "directories": {
     "lib": "dist"
+  },
+
+  "devDependencies": {
+    "node-fetch": "^3.3.1"
   }
+
 }

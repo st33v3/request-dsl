@@ -10,10 +10,8 @@ export type DefaultBody = AsyncIterable<Uint8Array>;
  */
 export interface CodecData<T> {
     value(): Promise<T>;
-    inString?(): Promise<string>;
-    inJson?(): Promise<unknown>;
-    outString?(): Promise<string>;
-    outJson?(): Promise<unknown>;
+    asString?(): Promise<string>;
+    asJson?(): Promise<unknown>;
 }
 
 /**
@@ -66,7 +64,7 @@ export namespace BodyCodec {
 
     export function drainCodec(): BodyCodec<DefaultBody, undefined> {
         async function drain(data: CodecData<DefaultBody>): Promise<undefined> {
-            if (data.inString) await data.inString();
+            if (data.asString) await data.asString();
             else for await (const buf of await data.value()) { /**/ } 
             return undefined;
         }
@@ -83,11 +81,11 @@ export namespace BodyCodec {
     export function toString(encoding?: string): BodyCodec<DefaultBody, string> {
         return wrap((i) => {
             function str() {
-                return i.inString && !encoding ? i.inString() : makeString(i.value(), encoding);
+                return i.asString && !encoding ? i.asString() : makeString(i.value(), encoding);
             } 
             return {
                 value: str,
-                inString: str,
+                asString: str,
             };
         });
     }
@@ -95,20 +93,23 @@ export namespace BodyCodec {
     export function toJson(): BodyCodec<DefaultBody, unknown> {
         return wrap((i) => {
             function json() {
-                return i.inJson ? i.inJson() : makeString(i.value()).then(s => JSON.parse(s));
+                if (i.asJson) return i.asJson();
+                if (i.asString) i.asString().then(s => JSON.parse(s));
+                return makeString(i.value()).then(s => JSON.parse(s));
             }
             return {
                 value: json,
-                inJson: json,
+                asJson: json,
             };
         });
     }
 
     export function fromString(encoding?: string): BodyCodec<string, DefaultBody> {
+        if (encoding && encoding !== "utf8") throw new Error("Unsupported encoding " + encoding);
         return wrap((i) => {
             return {
                 value: () => makeBuffer(i.value()),
-                outString: i.value,
+                asString: i.value,
             };
         });
     }
@@ -117,7 +118,7 @@ export namespace BodyCodec {
         return wrap((i) => {
             return {
                 value: () => makeBuffer(i.value().then(v => JSON.stringify(v))),
-                outJson: i.value,
+                asJson: i.value,
             };
         });
     }
@@ -150,9 +151,9 @@ export namespace BodyCodec {
     export function emptyBody(): CodecData<DefaultBody> {
         return {
             value() {return Promise.resolve(iterable()) },
-            outString() {return Promise.resolve("") },
+            asString() {return Promise.resolve("") },
         }
     }
 }
 
-const g = BodyCodec.select(rec => rec["a"], ["s", BodyCodec.toString()], ["n", BodyCodec.toString().map(s => parseInt(s))]);
+//const g = BodyCodec.select(rec => rec["a"], ["s", BodyCodec.toString()], ["n", BodyCodec.toString().map(s => parseInt(s))]);

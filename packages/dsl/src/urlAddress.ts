@@ -14,7 +14,7 @@ export namespace RequestAddress {
         const ret: RequestAddress = {
             path: s.pathname.substring(1).split("/"),
             hostname: s.hostname,
-            protocol: s.protocol.substring(1),
+            protocol: s.protocol.substring(0, s.protocol.length - 1),
             search: s.search ? new URLSearchParams(s.search.substring(1)) : new URLSearchParams(),
             username: s.username,
             password: s.password,

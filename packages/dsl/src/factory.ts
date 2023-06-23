@@ -1,9 +1,9 @@
 import { CodecData, DefaultBody } from "./codec";
-import { RequestTransform } from "./transform";
-import { RecoverStrategy, RequestFailed } from "./failure";
-import { HttpMethod } from "./method-enum";
-import { RequestAddress } from "./urlAddress";
 import { ResponseDecoder } from "./decoder";
+import { RecoverStrategy } from "./failure";
+import { HttpMethod } from "./method-enum";
+import { RequestTransform } from "./transform";
+import { RequestAddress } from "./urlAddress";
 
 
 export interface RequestData<R> {
@@ -32,7 +32,7 @@ export interface RequestFactory<A extends {}, B, R> {
     addArgs<A1 extends {}>(): RequestFactory<A & A1 , B, R>;
     provideArgs<A1 extends Partial<A>>(provided: A1): RequestFactory<Omit<A, keyof A1> , B, R>;
     /**
-     * Applies transformer created later from actual argument values
+     * Applies transformer created from actual argument values.
      * @param f funtion that provides factory transformer for particular arguments
      */
     applyArgs<A1 extends A, B1, R1>(f: (p: A) => RequestTransform<A, B, R, A1, B1, R1>): RequestFactory<A1, B1, R1>;
@@ -58,7 +58,7 @@ export namespace RequestFactory {
                 return t(ret as RequestFactory<A, B, R>);
             },
             addArgs<A1>(): RequestFactory<A & A1 , B, R> {
-                return self as unknown as RequestFactory<A & A1 , B, R>;
+                return wrap(self) as unknown as RequestFactory<A & A1 , B, R>;
             },
             provideArgs<A1 extends Partial<A>>(provided: A1): RequestFactory<Omit<A, keyof A1> , B, R> {
                 return wrap<Omit<A, keyof A1>, B, R>((ctx) => self({...ctx, args: {...ctx.args, ...provided} as unknown as A}))

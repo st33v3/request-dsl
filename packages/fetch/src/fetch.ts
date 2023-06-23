@@ -1,6 +1,5 @@
-import { CodecData, RequestAddress, RequestData, RequestFactory, RequestProcessor } from "request-dsl";
+import { CodecData, RequestAddress, RequestProcessor } from "request-dsl";
 import { DefaultBody } from "request-dsl/dist/codec";
-import { RequestFailed } from "request-dsl/dist/failure";
 import { RequestRunner, SingleRequest } from "request-dsl/dist/runner";
 
 async function* streamToIter(stream: ReadableStream<Uint8Array> | null): DefaultBody {
@@ -18,8 +17,11 @@ async function* streamToIter(stream: ReadableStream<Uint8Array> | null): Default
     }
 }
 
-const processData: SingleRequest = async (data, abort) => {
+//Exported because of tests
+export const processData: SingleRequest = async (data, abort) => {
+    console.log("Addr", data.address);
     const url = RequestAddress.toUrl(data.address);
+    console.log("URL", url);
     const init: RequestInit = {};
     init.method = data.method;
     init.headers = new Headers();
@@ -31,8 +33,8 @@ const processData: SingleRequest = async (data, abort) => {
     init.redirect = "manual";
     if (data.body) {
         const out = data.body;
-        if (out.outString) {
-            init.body = await out.outString();
+        if (out.asString) {
+            init.body = await out.asString();
         } else {
             let iter: AsyncIterator<Uint8Array>;
             const stream = new ReadableStream({
@@ -55,8 +57,8 @@ const processData: SingleRequest = async (data, abort) => {
     for (const e of response.headers.entries()) headers[e[0]] = e[1];
     const input: CodecData<DefaultBody> = {
         value: () => Promise.resolve(streamToIter(response.body)),
-        inJson: () => response.json(),
-        inString: () => response.text(),
+        asJson: () => response.json(),
+        asString: () => response.text(),
     }
     return {
         body: input,
@@ -65,5 +67,7 @@ const processData: SingleRequest = async (data, abort) => {
     };
 }
 
-export const fetchProcessor: RequestProcessor<{}> = RequestProcessor.init(RequestRunner.wrap(processData));
+export function fetchProcessor(): RequestProcessor<{}> {
+    return RequestProcessor.init(RequestRunner.wrap(processData));
+}
 

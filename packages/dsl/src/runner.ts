@@ -3,9 +3,6 @@ import { ResponseContext } from "./decoder";
 import { RequestContext, RequestData, RequestFactory } from "./factory";
 import { RequestFailed } from "./failure";
 
-/**
- * SPI interface that specifies capability of request making library. 
- */
 export type RequestRunner = <A extends {}, B, R>(abort: AbortSignal | undefined, args: A, body: () => B | PromiseLike<B>, fac: RequestFactory<A, B, R>) => Promise<R>;
 
 export interface ResponseData {
@@ -14,6 +11,9 @@ export interface ResponseData {
     body: CodecData<DefaultBody>;
 }
 
+/**
+ * SPI interface that specifies capability of request making library. 
+ */
 export type SingleRequest = (data: RequestData<unknown>, abort: AbortSignal | undefined) => Promise<ResponseData>;
 
 export namespace RequestRunner {
@@ -53,6 +53,7 @@ export namespace RequestRunner {
                 const codec = data.decoder(rc);
                 if (!codec) { //rejected
                     recoverBody = res.body;
+                    finalErr = new Error("No suitable response decoder found");
                 } else {
                     return await codec(res.body).value();
                 }

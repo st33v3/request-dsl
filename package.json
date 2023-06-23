@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "execute": "execute",
-    "test": "vitest -r packages/test"
+    "build": "pnpm -r run build",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
