@@ -1,6 +1,7 @@
 import { BodyCodec, DefaultBody } from "./codec";
 import { RequestFactory } from "./factory";
 import { RequestTransform, SetBodyTransform } from "./transform";
+import { contentType } from "./headers";
 
 export function reset<A extends {}, B, R>(): RequestTransform<A, B, R, A, never, R> {
     throw "TODO - Unimplemented";
@@ -41,7 +42,15 @@ export function string(): SetBodyTransform<string> {
  * @param cnv optinal conversion/vaidation of body object to JSON material. Body object will be passed through JSON.stringify 
  */
 export function json<B = unknown>(cnv?: (b: B) => unknown): SetBodyTransform<B> {
-    throw "TODO - Unimplemented";
+    return <A extends {}, B1, R> (factory: RequestFactory<A, B1, R>) => {
+        const ret = RequestFactory.wrap<A, B, R>((ctx) => {
+            const old: () => Promise<B1> = () => Promise.reject("Internal error, replaced body should not be used");
+            const data = factory({...ctx, body: old});
+            const body = BodyCodec.fromJson()({value: () => ctx.body().then(b => cnv ? cnv(b) : b )})
+            return {...data, body}
+        });
+        return ret.apply(contentType("application/json"));
+    }
 }
 
 

@@ -53,7 +53,17 @@ namespace Accept {
         const bd2 = convert ? bd.map(convert) : bd as BodyCodec<DefaultBody, T>;
         return accept(bd2, testContentTypes(["application/json"],testStatuses(status)));
     }
-    
+
+    export function acceptString(status: StatusCodes, encoding?: string): AltResultTransform<string> {
+        const bd = BodyCodec.toString(encoding);
+        return accept(bd, testContentTypes(["text/plain"],testStatuses(status)));
+    }
+
+    export function acceptStringLax(status: StatusCodes, encoding?: string): AltResultTransform<string> {
+        const bd = BodyCodec.toString(encoding);
+        return accept(bd, testStatuses(status));
+    }
+
     export function acceptDefault<T>(def: () => T | PromiseLike<T>, testAux?: (aux: unknown) => boolean): AltResultTransform<T> {
         const bc = BodyCodec.drainCodec().map(def);
         const decoder = ResponseDecoder.fromCodec(bc).when(ctx => ctx.status === SpecialStatusCode.useDefault && (!testAux ||testAux(ctx.aux)));
@@ -73,6 +83,7 @@ namespace Accept {
     }
 
     export function acceptDecoder<O>(decoder: ResponseDecoder<O>): AltResultTransform<O> {
+        //return changeDecoder(d => d.otherwise(decoder));
         return factory => factory.pipeTo(data => ({...data, decoder: decoder.otherwise(data.decoder)}));
     }
 }

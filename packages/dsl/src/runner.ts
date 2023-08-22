@@ -53,7 +53,7 @@ export namespace RequestRunner {
                 const codec = data.decoder(rc);
                 if (!codec) { //rejected
                     recoverBody = res.body;
-                    finalErr = new Error("No suitable response decoder found");
+                    finalErr = new Error("No suitable response decoder found. Status = " + rc.status);
                 } else {
                     return await codec(res.body).value();
                 }

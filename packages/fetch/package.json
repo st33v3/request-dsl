@@ -12,7 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "request-dsl": "workspace:*"
+    "request-dsl": "workspace:*",
+    "request-dsl-fetch": "workspace:*"
   },
   "directories": {
     "lib": "dist"

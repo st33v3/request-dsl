@@ -19,10 +19,9 @@ async function* streamToIter(stream: ReadableStream<Uint8Array> | null): Default
 
 //Exported because of tests
 export const processData: SingleRequest = async (data, abort) => {
-    console.log("Addr", data.address);
     const url = RequestAddress.toUrl(data.address);
-    console.log("URL", url);
-    const init: RequestInit = {};
+    console.log("URL", url.toString());
+    const init: RequestInit & {duplex?: string} = {}; //Duplex option required by node
     init.method = data.method;
     init.headers = new Headers();
     for (const k in data.headers) {
@@ -32,8 +31,11 @@ export const processData: SingleRequest = async (data, abort) => {
     init.signal = abort;
     init.redirect = "manual";
     if (data.body) {
+        init.duplex = "half";
         const out = data.body;
-        if (out.asString) {
+        if (out.asJson) {
+            init.body = JSON.stringify(await out.asJson());
+        } else if (out.asString) {
             init.body = await out.asString();
         } else {
             let iter: AsyncIterator<Uint8Array>;
