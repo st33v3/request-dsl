@@ -1,5 +1,6 @@
 {
     "private": true,
+    "type": "module",
     "scripts": {
       "types": "vitest typecheck --run",
       "tsc": "tsc --noEmit",

@@ -1,19 +1,91 @@
 {
     "name": "request-dsl",
-    "version": "0.1.0",
+    "version": "0.0.1",
     "description": "",
-    "main": "dist",
-    "types": "dist",
+    "files": ["dist"],
+    "type": "module",
+    "exports": {
+      ".": {
+        "import":  {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.cjs"
+        }
+      },
+      "./accept": {
+        "import":  {
+          "types": "./dist/accept.d.ts",
+          "default": "./dist/accept.js"
+        },
+        "require": {
+          "types": "./dist/accept.d.ts",
+          "default": "./dist/accept.cjs"
+        }
+      },        
+      "./address": {
+        "import":  {
+          "types": "./dist/address.d.ts",
+          "default": "./dist/address.js"
+        },
+        "require": {
+          "types": "./dist/address.d.ts",
+          "default": "./dist/address.cjs"
+        }
+      },
+      "./body": {
+        "import":  {
+          "types": "./dist/body.d.ts",
+          "default": "./dist/body.js"
+        },
+        "require": {
+          "types": "./dist/body.d.ts",
+          "default": "./dist/body.cjs"
+        }
+      },
+      "./decoder": {
+        "import":  {
+          "types": "./dist/decoder.d.ts",
+          "default": "./dist/decoder.js"
+        },
+        "require": {
+          "types": "./dist/decoder.d.ts",
+          "default": "./dist/decoder.cjs"
+        }
+      },
+      "./headers": {
+        "import":  {
+          "types": "./dist/headers.d.ts",
+          "default": "./dist/headers.js"
+        },
+        "require": {
+          "types": "./dist/headers.d.ts",
+          "default": "./dist/headers.cjs"
+        }
+      },
+      "./request": {
+        "import":  {
+          "types": "./dist/request.d.ts",
+          "default": "./dist/request.js"
+        },
+        "require": {
+          "types": "./dist/request.d.ts",
+          "default": "./dist/request.cjs"
+        }
+      }
+    },
     "scripts": {
       "tsc": "tsc",
-      "build": "tsc",
+      "build": "vite build",
       "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],
     "author": "",
-    "license": "ISC",
-    "directories": {
-      "lib": "dist"
+    "license": "MIT",
+    "devDependencies": {
+      "vite": "^4.4.9"
     }
   }
   

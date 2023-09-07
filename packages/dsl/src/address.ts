@@ -1,4 +1,4 @@
-import { RequestAddress } from "./urlAddress";
+import { RequestAddress } from "./url-address";
 import { SetOrUpdate } from "./set-update";
 import { SimpleRequestTransform2 } from "./transform";
 

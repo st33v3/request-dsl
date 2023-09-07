@@ -3,7 +3,7 @@ import { ResponseDecoder } from "./decoder";
 import { RecoverStrategy } from "./failure";
 import { HttpMethod } from "./method-enum";
 import { RequestTransform } from "./transform";
-import { RequestAddress } from "./urlAddress";
+import { RequestAddress } from "./url-address";
 
 
 export interface RequestData<R> {

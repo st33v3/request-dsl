@@ -6,7 +6,7 @@ import { RequestTransform, SimpleRequestTransform2 } from "./transform";
 /**
  * Type describing mapping from object of request factories to object of API calls.
  */
-export type ApiRequestObj<P extends {}, O extends Record<string, RequestFactory<any, any, any>>> = {[K in keyof O]: O[K] extends RequestFactory<infer IA extends P, infer IB, infer IR> ? ProvidedApiRequest<IA, IB, IR, P> : never };
+export type ApiRequestObj<P extends {}, O extends Record<string, unknown>> = {[K in keyof O]: O[K] extends RequestFactory<infer IA extends P, infer IB, infer IR> ? ProvidedApiRequest<IA, IB, IR, P> : never };
 
 /**
  * Mapper of API request that are provided by particular arguments
@@ -52,7 +52,7 @@ export interface RequestProcessor<P extends {}> {
      * to prevent invoking request processor repeatedly.
      * @param o object containing request factories to be converted
      */
-    processObject<O extends Record<string, RequestFactory<any, any, any>>>(o: O): ApiRequestObj<P, O>;
+    processObject<O extends Record<string, unknown>>(o: O): ApiRequestObj<P, O>;
 }
 
 export namespace RequestProcessor {
@@ -94,11 +94,11 @@ export namespace RequestProcessor {
                     runner,
                 );
             },
-            processObject<O extends Record<string, RequestFactory<any, any, any>>>(o: O): ApiRequestObj<P, O> {
+            processObject<O extends Record<string, unknown>>(o: O): ApiRequestObj<P, O> {
                 const ret: Record<string, ApiRequest<any, any, any>> = {};
                 for (const k in o) {
                     if (Object.hasOwn(o, k)) {
-                        ret[k] = self(o[k])
+                        ret[k] = self(o[k] as RequestFactory<any, any, any>)
                     }
                 }
                 return ret as any;
